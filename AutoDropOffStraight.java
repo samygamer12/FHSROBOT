@@ -25,7 +25,7 @@ public class AutoDropOffStraight extends Command {
 
     private final DriveSubsystem driveSubsystem;
     private final CoralSubsystem coralSubsystem;
-    private Timer timer;
+    private Timer timer = new Timer();
     private SparkClosedLoopController pidControllerLeft;
     private SparkClosedLoopController pidControllerRight;
     
@@ -34,7 +34,7 @@ public class AutoDropOffStraight extends Command {
   private final AHRS navX; //gyro and acceleration
   private boolean collision; //make it stop immediately if it detects collision so it doesnt keep going.
 
-   
+   boolean scored = false;
 
   public AutoDropOffStraight(DriveSubsystem driveSubsystem, CoralSubsystem coralSubsystem, 
   AnalogInput ultraSonicSensor, AHRS navX, 
@@ -47,6 +47,7 @@ public class AutoDropOffStraight extends Command {
     this.pidControllerRight = pidControllerRight;
     
   
+    scored = false;
 
     
     
@@ -57,32 +58,38 @@ public class AutoDropOffStraight extends Command {
 
   @Override
   public void initialize() {
-    collision = false;
-    
-    timer.reset();
-    timer.start();
-    navX.reset();
+    scored = false;
+
   }
   @Override
   public void execute() {
     
-    double finalSpeedPer = 0;
 
-    //forwards for certain amount of timeto aling in
-    while (!timer.hasElapsed(2))
-    {
-      driveSubsystem.manualDrive(-0.5, 0.5);
-    }
-    new WaitCommand(2);
+driveSubsystem.manualDrive(-0.5, 0.5);
+
+if (ultraSonicSensor.getVoltage() < 0.6)
+{
+  new WaitCommand(0.5);
+  coralSubsystem.coralLaunchAuto();
+}
+   
+
+
+
     
 
+    
+    
+    
+/*
     //slow down as it approaches the reef
-   while (timer.getVoltage() < 1.75 && timer.getVoltage() > 0.75 && finalSpeedPer > 0)
+   while (ultraSonicSensor.getVoltage() < 1.75 && ultraSonicSensor.getVoltage() > 0.75 && finalSpeedPer > 0)
     {
-
       finalSpeedPer -= 0.001;
       driveSubsystem.manualDrive(-finalSpeedPer, finalSpeedPer);
    }
+
+   */
 
     
     
@@ -92,31 +99,17 @@ public class AutoDropOffStraight extends Command {
   @Override
   public void end(boolean interrupted) {
 
-    driveSubsystem.manualDrive(0, 0);
-    new WaitCommand(3);
-    new CoralLaunch(coralSubsystem);
-
-    timer.reset();
-    timer.start();
-    while (timer.hasElapsed(3));
-    {
-    driveSubsystem.manualDrive(0.5, -0.5);
-    }
-
-    
-    
-    
-  
+   coralSubsystem.stopLaunch();
+   
+   
      
-    
-
+  
     
     
   }
 
   @Override
   public boolean isFinished() {
-    return ultraSonicSensor.getVoltage() < 0.6;
+    return ultraSonicSensor.getVoltage() < 0.5;
   }
 }
-
